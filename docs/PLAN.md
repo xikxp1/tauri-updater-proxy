@@ -75,9 +75,10 @@ GET /download/*path            # Binary download proxy (streams from GitHub)
 ```
 
 The manifest endpoint:
-1. Fetches `latest.json` from GitHub releases
-2. Rewrites each platform's `url` field: replace GitHub host with proxy host
-3. Returns modified manifest to Tauri client
+1. Fetches latest release info via GitHub API (`/repos/{owner}/{repo}/releases/latest`)
+2. Downloads `latest.json` asset from the release
+3. Rewrites each platform's `url` field: replace GitHub host with proxy host
+4. Returns modified manifest to Tauri client
 
 The download endpoint:
 1. Receives requests with the original GitHub path
@@ -88,8 +89,8 @@ The download endpoint:
 
 Environment variables:
 - `PORT` - Server port (default: 3000)
-- `GITHUB_TOKEN` - GitHub personal access token for private repo access
-- `UPSTREAM_URL` - GitHub releases URL base (e.g., `https://github.com/owner/repo/releases/latest/download`)
+- `GITHUB_TOKEN` - GitHub personal access token for private repo access (requires `repo` scope)
+- `UPSTREAM_URL` - GitHub repository URL (e.g., `https://github.com/owner/repo`)
 - `AUTH_USERNAME` - Basic auth username for proxy access
 - `AUTH_PASSWORD` - Basic auth password for proxy access
 

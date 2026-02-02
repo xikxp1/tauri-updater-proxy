@@ -14,7 +14,7 @@ This guide covers deploying the Tauri Updater Proxy in various environments.
 |----------|----------|---------|-------------|
 | `PORT` | No | `3000` | Server port |
 | `GITHUB_TOKEN` | Yes | - | GitHub Personal Access Token |
-| `UPSTREAM_URL` | Yes | - | GitHub releases URL base |
+| `UPSTREAM_URL` | Yes | - | GitHub repository URL (e.g., `https://github.com/owner/repo`) |
 | `AUTH_USERNAME` | Yes | - | Basic auth username for proxy access |
 | `AUTH_PASSWORD` | Yes | - | Basic auth password for proxy access |
 
@@ -76,7 +76,7 @@ docker run -d \
   --name tauri-updater-proxy \
   -p 3000:3000 \
   -e GITHUB_TOKEN=ghp_your_token \
-  -e UPSTREAM_URL=https://github.com/owner/repo/releases/latest/download \
+  -e UPSTREAM_URL=https://github.com/owner/repo \
   -e AUTH_USERNAME=your_username \
   -e AUTH_PASSWORD=your_secure_password \
   --restart unless-stopped \
@@ -196,7 +196,7 @@ Deploy:
 ```bash
 # Set secrets
 fly secrets set GITHUB_TOKEN=ghp_your_token
-fly secrets set UPSTREAM_URL=https://github.com/owner/repo/releases/latest/download
+fly secrets set UPSTREAM_URL=https://github.com/owner/repo
 fly secrets set AUTH_USERNAME=your_username
 fly secrets set AUTH_PASSWORD=your_secure_password
 

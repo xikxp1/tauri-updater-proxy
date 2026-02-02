@@ -1,13 +1,59 @@
 import type { UpdateManifest } from "../types";
 
+interface GitHubAsset {
+  name: string;
+  url: string;
+  browser_download_url: string;
+}
+
+interface GitHubRelease {
+  assets: GitHubAsset[];
+}
+
+/**
+ * Extract owner and repo from GitHub URL.
+ * Supports formats:
+ * - https://github.com/owner/repo
+ * - https://github.com/owner/repo/releases/latest/download
+ */
+function parseGitHubUrl(url: string): { owner: string; repo: string } {
+  const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
+  if (!match || !match[1] || !match[2]) {
+    throw new Error(`Invalid GitHub URL: ${url}`);
+  }
+  return { owner: match[1], repo: match[2] };
+}
+
 export async function fetchManifest(
   upstreamUrl: string,
   githubToken: string,
 ): Promise<UpdateManifest> {
-  const manifestUrl = `${upstreamUrl}/latest.json`;
+  const { owner, repo } = parseGitHubUrl(upstreamUrl);
 
-  // GitHub redirects to a signed URL; handle redirect manually to preserve auth
-  const response = await fetch(manifestUrl, {
+  // Step 1: Get latest release info via GitHub API
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
+  const releaseResponse = await fetch(apiUrl, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${githubToken}`,
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+
+  if (!releaseResponse.ok) {
+    throw new Error(`Failed to fetch release info: ${releaseResponse.status}`);
+  }
+
+  const release = (await releaseResponse.json()) as GitHubRelease;
+
+  // Step 2: Find the latest.json asset
+  const manifestAsset = release.assets.find((a) => a.name === "latest.json");
+  if (!manifestAsset) {
+    throw new Error("No latest.json asset found in release");
+  }
+
+  // Step 3: Download the asset using API URL (works for private repos)
+  const assetResponse = await fetch(manifestAsset.url, {
     headers: {
       Accept: "application/octet-stream",
       Authorization: `Bearer ${githubToken}`,
@@ -15,24 +61,26 @@ export async function fetchManifest(
     redirect: "manual",
   });
 
-  if (response.status === 302) {
-    const redirectUrl = response.headers.get("Location");
+  // GitHub redirects to a signed URL for asset downloads
+  if (assetResponse.status === 302) {
+    const redirectUrl = assetResponse.headers.get("Location");
     if (!redirectUrl) {
       throw new Error("Redirect without Location header");
     }
-    // Signed URL doesn't need auth
     const redirectResponse = await fetch(redirectUrl);
     if (!redirectResponse.ok) {
-      throw new Error(`Failed to fetch manifest from redirect: ${redirectResponse.status}`);
+      throw new Error(
+        `Failed to fetch manifest from redirect: ${redirectResponse.status}`,
+      );
     }
     return redirectResponse.json() as Promise<UpdateManifest>;
   }
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch manifest: ${response.status}`);
+  if (!assetResponse.ok) {
+    throw new Error(`Failed to fetch manifest asset: ${assetResponse.status}`);
   }
 
-  return response.json() as Promise<UpdateManifest>;
+  return assetResponse.json() as Promise<UpdateManifest>;
 }
 
 export function rewriteManifestUrls(

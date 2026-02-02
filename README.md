@@ -46,7 +46,7 @@ docker compose up --build
 |----------|----------|---------|-------------|
 | `PORT` | No | `3000` | Server port |
 | `GITHUB_TOKEN` | Yes | - | GitHub PAT for private repo access |
-| `UPSTREAM_URL` | Yes | - | GitHub releases URL (e.g., `https://github.com/owner/repo/releases/latest/download`) |
+| `UPSTREAM_URL` | Yes | - | GitHub repository URL (e.g., `https://github.com/owner/repo`) |
 | `AUTH_USERNAME` | Yes | - | Basic auth username |
 | `AUTH_PASSWORD` | Yes | - | Basic auth password |
 

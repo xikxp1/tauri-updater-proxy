@@ -4,7 +4,7 @@ import type { UpdateManifest } from "../src/types";
 const TEST_ENV = {
   PORT: 3000,
   GITHUB_TOKEN: "test-github-token",
-  UPSTREAM_URL: "https://github.com/owner/repo/releases/latest/download",
+  UPSTREAM_URL: "https://github.com/owner/repo",
   AUTH_USERNAME: "testuser",
   AUTH_PASSWORD: "testpass",
 };
@@ -33,6 +33,29 @@ const mockManifest: UpdateManifest = {
   },
 };
 
+const mockGitHubRelease = {
+  assets: [
+    {
+      name: "latest.json",
+      url: "https://api.github.com/repos/owner/repo/releases/assets/12345",
+      browser_download_url:
+        "https://github.com/owner/repo/releases/download/v1.0.0/latest.json",
+    },
+    {
+      name: "app-darwin-x64.tar.gz",
+      url: "https://api.github.com/repos/owner/repo/releases/assets/12346",
+      browser_download_url:
+        "https://github.com/owner/repo/releases/download/v1.0.0/app-darwin-x64.tar.gz",
+    },
+    {
+      name: "app.tar.gz",
+      url: "https://api.github.com/repos/owner/repo/releases/assets/12347",
+      browser_download_url:
+        "https://github.com/owner/repo/releases/download/v1.0.0/app.tar.gz",
+    },
+  ],
+};
+
 function createAuthHeader(username: string, password: string): string {
   return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
 }
@@ -50,6 +73,89 @@ function createTestApp() {
   process.env.AUTH_PASSWORD = TEST_ENV.AUTH_PASSWORD;
 
   return require("../src/index").default;
+}
+
+/**
+ * Creates a mock fetch that handles GitHub API flow for manifest fetching
+ */
+function createGitHubApiMock() {
+  return mock(async (url: string, options?: RequestInit) => {
+    const headers = options?.headers as Record<string, string>;
+
+    // GitHub API releases/latest endpoint
+    if (url.includes("api.github.com/repos/owner/repo/releases/latest")) {
+      expect(headers.Authorization).toBe(`Bearer ${TEST_ENV.GITHUB_TOKEN}`);
+      return new Response(JSON.stringify(mockGitHubRelease), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Asset download via API URL (redirects to signed URL)
+    if (url.includes("api.github.com/repos/owner/repo/releases/assets")) {
+      expect(headers.Authorization).toBe(`Bearer ${TEST_ENV.GITHUB_TOKEN}`);
+      expect(headers.Accept).toBe("application/octet-stream");
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "https://objects.githubusercontent.com/signed-url",
+        },
+      });
+    }
+
+    // Follow redirect to signed URL (no auth needed)
+    if (url.includes("objects.githubusercontent.com")) {
+      return new Response(JSON.stringify(mockManifest), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response("Not found", { status: 404 });
+  }) as unknown as typeof fetch;
+}
+
+/**
+ * Creates a mock fetch for download API flow with binary content
+ */
+function createDownloadApiMock(binaryContent: Uint8Array) {
+  return mock(async (url: string, options?: RequestInit) => {
+    const headers = options?.headers as Record<string, string>;
+
+    // GitHub API releases/tags endpoint
+    if (url.includes("api.github.com/repos/owner/repo/releases/tags/")) {
+      expect(headers.Authorization).toBe(`Bearer ${TEST_ENV.GITHUB_TOKEN}`);
+      return new Response(JSON.stringify(mockGitHubRelease), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Asset download via API URL (redirects to signed URL)
+    if (url.includes("api.github.com/repos/owner/repo/releases/assets")) {
+      expect(headers.Authorization).toBe(`Bearer ${TEST_ENV.GITHUB_TOKEN}`);
+      expect(headers.Accept).toBe("application/octet-stream");
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "https://objects.githubusercontent.com/signed-binary",
+        },
+      });
+    }
+
+    // Follow redirect to signed URL (no auth needed)
+    if (url.includes("objects.githubusercontent.com")) {
+      return new Response(binaryContent, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "Content-Length": String(binaryContent.length),
+        },
+      });
+    }
+
+    return new Response("Not found", { status: 404 });
+  }) as unknown as typeof fetch;
 }
 
 describe("Integration Tests", () => {
@@ -95,20 +201,7 @@ describe("Integration Tests", () => {
     });
 
     it("should fetch and rewrite manifest with valid auth", async () => {
-      globalThis.fetch = mock(async (url: string, options?: RequestInit) => {
-        if (url.includes("latest.json")) {
-          // Verify GitHub token is passed
-          expect(options?.headers).toBeDefined();
-          const headers = options?.headers as Record<string, string>;
-          expect(headers.Authorization).toBe(`Bearer ${TEST_ENV.GITHUB_TOKEN}`);
-
-          return new Response(JSON.stringify(mockManifest), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-        return new Response("Not found", { status: 404 });
-      }) as unknown as typeof fetch;
+      globalThis.fetch = createGitHubApiMock();
 
       const app = createTestApp();
       const res = await app.fetch(
@@ -185,24 +278,7 @@ describe("Integration Tests", () => {
     it("should stream binary from GitHub with valid auth", async () => {
       const binaryContent = new Uint8Array([0x50, 0x4b, 0x03, 0x04]); // ZIP magic bytes
 
-      globalThis.fetch = mock(async (url: string, options?: RequestInit) => {
-        // Verify correct GitHub URL reconstruction
-        expect(url).toBe(
-          "https://github.com/owner/repo/releases/download/v1.0.0/app.tar.gz",
-        );
-
-        // Verify GitHub token is passed
-        const headers = options?.headers as Record<string, string>;
-        expect(headers.Authorization).toBe(`Bearer ${TEST_ENV.GITHUB_TOKEN}`);
-
-        return new Response(binaryContent, {
-          status: 200,
-          headers: {
-            "Content-Type": "application/octet-stream",
-            "Content-Length": String(binaryContent.length),
-          },
-        });
-      }) as unknown as typeof fetch;
+      globalThis.fetch = createDownloadApiMock(binaryContent);
 
       const app = createTestApp();
       const res = await app.fetch(
@@ -232,14 +308,31 @@ describe("Integration Tests", () => {
     it("should handle different content types", async () => {
       const tarGzContent = new Uint8Array([0x1f, 0x8b, 0x08]); // gzip magic bytes
 
-      globalThis.fetch = mock(async () => {
-        return new Response(tarGzContent, {
-          status: 200,
-          headers: {
-            "Content-Type": "application/gzip",
-            "Content-Length": String(tarGzContent.length),
-          },
-        });
+      globalThis.fetch = mock(async (url: string) => {
+        if (url.includes("api.github.com/repos/owner/repo/releases/tags/")) {
+          return new Response(JSON.stringify(mockGitHubRelease), {
+            status: 200,
+          });
+        }
+
+        if (url.includes("api.github.com/repos/owner/repo/releases/assets")) {
+          return new Response(null, {
+            status: 302,
+            headers: { Location: "https://objects.githubusercontent.com/file" },
+          });
+        }
+
+        if (url.includes("objects.githubusercontent.com")) {
+          return new Response(tarGzContent, {
+            status: 200,
+            headers: {
+              "Content-Type": "application/gzip",
+              "Content-Length": String(tarGzContent.length),
+            },
+          });
+        }
+
+        return new Response("Not found", { status: 404 });
       }) as unknown as typeof fetch;
 
       const app = createTestApp();
@@ -287,9 +380,7 @@ describe("Integration Tests", () => {
 
   describe("Authentication", () => {
     it("should accept valid Basic auth credentials", async () => {
-      globalThis.fetch = mock(async () => {
-        return new Response(JSON.stringify(mockManifest), { status: 200 });
-      }) as unknown as typeof fetch;
+      globalThis.fetch = createGitHubApiMock();
 
       const app = createTestApp();
       const res = await app.fetch(
