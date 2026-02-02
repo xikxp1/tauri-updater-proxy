@@ -10,6 +10,7 @@ Build a proxy server for Tauri application updates from private GitHub repos. Th
 - [x] Core proxy functionality
 - [x] Docker deployment
 - [x] Testing & Documentation
+- [x] CI workflow
 
 ## Phase 1: Project Setup
 
@@ -41,6 +42,7 @@ Build a proxy server for Tauri application updates from private GitHub repos. Th
 - [x] Integration tests for endpoints
 - [x] API documentation
 - [x] Deployment guide
+- [x] CI workflow (format check, lint, tests)
 
 ## Tauri Update Manifest Format
 
