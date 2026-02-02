@@ -7,7 +7,8 @@ export function createManifestRoute(env: Env) {
 
   route.get("/latest.json", async (c) => {
     const url = new URL(c.req.url);
-    const proto = c.req.header("X-Forwarded-Proto") ?? url.protocol.replace(":", "");
+    const proto =
+      c.req.header("X-Forwarded-Proto") ?? url.protocol.replace(":", "");
     const proxyBaseUrl = `${proto}://${url.host}`;
 
     const manifest = await fetchManifest(env.UPSTREAM_URL, env.GITHUB_TOKEN);
