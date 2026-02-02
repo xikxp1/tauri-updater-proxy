@@ -7,7 +7,7 @@ Build a proxy server for Tauri application updates from private GitHub repos. Th
 ## Status
 
 - [x] Project scaffolding
-- [ ] Core proxy functionality
+- [x] Core proxy functionality
 - [x] Docker deployment
 - [ ] Testing
 
@@ -21,12 +21,12 @@ Build a proxy server for Tauri application updates from private GitHub repos. Th
 
 ## Phase 2: Core Proxy
 
-- [ ] Implement manifest proxy endpoint (`GET /:target/:current_version`)
-- [ ] Fetch manifest from GitHub releases (latest.json)
-- [ ] Rewrite platform URLs in manifest to point to proxy's download endpoint
-- [ ] Implement binary download proxy (`GET /download/*path`)
-- [ ] Stream binaries from GitHub with authentication
-- [ ] Add Basic HTTP Auth middleware
+- [x] Implement manifest proxy endpoint (`GET /latest.json`)
+- [x] Fetch manifest from GitHub releases (latest.json)
+- [x] Rewrite platform URLs in manifest to point to proxy's download endpoint
+- [x] Implement binary download proxy (`GET /download/*path`)
+- [x] Stream binaries from GitHub with authentication
+- [x] Add Basic HTTP Auth middleware
 
 ## Phase 3: Docker & Deployment
 
@@ -37,7 +37,7 @@ Build a proxy server for Tauri application updates from private GitHub repos. Th
 
 ## Phase 4: Testing & Documentation
 
-- [ ] Unit tests for services
+- [x] Unit tests for services
 - [ ] Integration tests for endpoints
 - [ ] API documentation
 - [ ] Deployment guide
@@ -70,7 +70,7 @@ Platform keys: `{os}-{arch}` where:
 
 ```
 GET /health                    # Health check
-GET /:target/:current_version  # Update manifest proxy (rewrites URLs)
+GET /latest.json               # Update manifest proxy (rewrites URLs)
 GET /download/*path            # Binary download proxy (streams from GitHub)
 ```
 
@@ -89,7 +89,7 @@ The download endpoint:
 Environment variables:
 - `PORT` - Server port (default: 3000)
 - `GITHUB_TOKEN` - GitHub personal access token for private repo access
-- `UPSTREAM_URL` - GitHub releases URL base (e.g., `https://github.com/owner/repo/releases/download`)
+- `UPSTREAM_URL` - GitHub releases URL base (e.g., `https://github.com/owner/repo/releases/latest/download`)
 - `AUTH_USERNAME` - Basic auth username for proxy access
 - `AUTH_PASSWORD` - Basic auth password for proxy access
 
