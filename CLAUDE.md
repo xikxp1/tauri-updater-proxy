@@ -34,7 +34,7 @@ Use `bun add <package>` to add new dependencies, avoid editing `package.json` ma
 - `bun run lint` - Run linter
 - `bun run format` - Format code
 
-Always run `bun test` after making changes to validate code integrity.
+Always run `bun run format && bun run lint && bun test` after making changes to validate code integrity.
 
 **Build & Deploy**
 - `bun run build` - Production build
