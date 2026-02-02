@@ -101,7 +101,7 @@ Create a `docker-compose.prod.yml`:
 ```yaml
 services:
   tauri-updater-proxy:
-    image: tauri-updater-proxy:latest
+    image: ghcr.io/xikxp1/tauri-updater-proxy:latest
     ports:
       - "3000:3000"
     environment:
@@ -112,7 +112,7 @@ services:
       - AUTH_PASSWORD=${AUTH_PASSWORD}
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "bun", "-e", "fetch('http://localhost:3000/health').then(r => process.exit(r.ok ? 0 : 1))"]
       interval: 30s
       timeout: 10s
       retries: 3
