@@ -25,12 +25,14 @@ describe("rewriteManifestUrls", () => {
     expect(result.version).toBe("0.1.9");
     expect(result.notes).toBe("Release notes");
     expect(result.pub_date).toBe("2025-11-18T14:09:51.808Z");
-    expect(result.platforms["darwin-x86_64"]?.signature).toBe("base64-signature");
+    expect(result.platforms["darwin-x86_64"]?.signature).toBe(
+      "base64-signature",
+    );
     expect(result.platforms["darwin-x86_64"]?.url).toBe(
-      "https://proxy.example.com/download/owner/repo/releases/download/v0.1.9/app.tar.gz"
+      "https://proxy.example.com/download/owner/repo/releases/download/v0.1.9/app.tar.gz",
     );
     expect(result.platforms["darwin-aarch64"]?.url).toBe(
-      "https://proxy.example.com/download/owner/repo/releases/download/v0.1.9/app-arm.tar.gz"
+      "https://proxy.example.com/download/owner/repo/releases/download/v0.1.9/app-arm.tar.gz",
     );
   });
 

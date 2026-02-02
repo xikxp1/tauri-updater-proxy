@@ -1,6 +1,6 @@
 export async function streamFromGitHub(
   path: string,
-  githubToken: string
+  githubToken: string,
 ): Promise<Response> {
   const githubUrl = `https://github.com${path}`;
 

@@ -2,7 +2,7 @@ import type { UpdateManifest } from "../types";
 
 export async function fetchManifest(
   upstreamUrl: string,
-  githubToken: string
+  githubToken: string,
 ): Promise<UpdateManifest> {
   const manifestUrl = `${upstreamUrl}/latest.json`;
 
@@ -22,7 +22,7 @@ export async function fetchManifest(
 
 export function rewriteManifestUrls(
   manifest: UpdateManifest,
-  proxyBaseUrl: string
+  proxyBaseUrl: string,
 ): UpdateManifest {
   const rewritten: UpdateManifest = {
     ...manifest,

@@ -9,7 +9,7 @@ Build a proxy server for Tauri application updates from private GitHub repos. Th
 - [x] Project scaffolding
 - [x] Core proxy functionality
 - [x] Docker deployment
-- [ ] Testing
+- [x] Testing & Documentation
 
 ## Phase 1: Project Setup
 
@@ -38,9 +38,9 @@ Build a proxy server for Tauri application updates from private GitHub repos. Th
 ## Phase 4: Testing & Documentation
 
 - [x] Unit tests for services
-- [ ] Integration tests for endpoints
-- [ ] API documentation
-- [ ] Deployment guide
+- [x] Integration tests for endpoints
+- [x] API documentation
+- [x] Deployment guide
 
 ## Tauri Update Manifest Format
 
@@ -92,6 +92,17 @@ Environment variables:
 - `UPSTREAM_URL` - GitHub releases URL base (e.g., `https://github.com/owner/repo/releases/latest/download`)
 - `AUTH_USERNAME` - Basic auth username for proxy access
 - `AUTH_PASSWORD` - Basic auth password for proxy access
+
+## Tauri Client Authentication
+
+To avoid hardcoding credentials in the Tauri app source code, use CI/CD secret injection:
+
+1. Store `UPDATE_AUTH_USERNAME` and `UPDATE_AUTH_PASSWORD` in GitHub Secrets
+2. Inject at build time via environment variable: `UPDATE_AUTH=$USERNAME:$PASSWORD`
+3. Read in Rust with `env!("UPDATE_AUTH")` macro (compile-time)
+4. Pass as `Authorization: Basic <base64>` header to the updater
+
+This keeps credentials out of source control while maintaining access control. See README for full implementation details.
 
 ## Notes
 

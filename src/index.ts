@@ -16,7 +16,7 @@ app.use(
   basicAuth({
     username: env.AUTH_USERNAME,
     password: env.AUTH_PASSWORD,
-  })
+  }),
 );
 
 app.route("/download", createDownloadRoute(env));
