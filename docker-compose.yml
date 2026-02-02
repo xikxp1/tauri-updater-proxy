@@ -1,0 +1,12 @@
+services:
+  tauri-updater-proxy:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - UPSTREAM_URL=${UPSTREAM_URL}
+      - AUTH_USERNAME=${AUTH_USERNAME}
+      - AUTH_PASSWORD=${AUTH_PASSWORD}
+    restart: unless-stopped
